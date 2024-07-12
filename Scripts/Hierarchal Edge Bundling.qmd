@@ -1,5 +1,5 @@
 ---
-title: "Hierarchal Edge Bundling"
+title: "Hierarchical Edge Bundling"
 author: "Théophile L. Mouton"
 date: "2024-07-12"
 format: html
@@ -15,13 +15,13 @@ execute:
   results: hide
 ---
 
-Constructing Hierarchal Edge Bundling charts for molecular data. One for male, the other for females.
+Constructing Hierarchical Edge Bundling charts for molecular data. One for females, the other for males.
 
 ## Female data
 
 ### Load required libraries, data and create the dendrogram
 
-This code loads necessary R packages, loads the female data, standardizes the data to one unit variance accross sampled groups, calculates euclidean dissimilarities, performs hierarchal clustering and creates a dendrogram from the output.
+This code loads necessary R packages, loads the female data, standardizes the data to one unit variance across sampled groups, calculates euclidean distances, performs hierarchical clustering and creates a dendrogram.
 
 ```{r}
 
@@ -56,7 +56,8 @@ hc <- hclust(dist_matrix, method = "ward.D2")
 dendro <- as.dendrogram(hc)
 ```
 
-### Create the dataframes necessary for plotting the charts: edges, vertices and connections
+### Create dataframes 
+This code creates three dataframes necessary for plotting the charts: edges, vertices and connections
 
 ```{r}
 
@@ -165,36 +166,220 @@ ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
 
 ```{r}
 #Correct the connections_my dataframe with valid connections 
-node_mapping_1 <- data.frame(
-  old = paste0("Node_", 1:41),
-  new = V(mygraph)$name
-)
-
+# Get leaf nodes
 leaf_nodes <- V(mygraph)$name[V(mygraph)$leaf]
-numeric_nodes <- as.character(1:length(leaf_nodes))
 
-node_mapping_2 <- data.frame(
-  old = numeric_nodes,
-  new = leaf_nodes
-)
-
-node_mapping <- rbind(node_mapping_1, node_mapping_2)
-
-connections_my_corrected <- connections_my %>%
+# Create all possible combinations of leaf nodes
+all_combinations <- expand.grid(from = leaf_nodes, to = leaf_nodes) %>%
   mutate(
-    from = node_mapping$new[match(from, node_mapping$old)],
-    to = node_mapping$new[match(to, node_mapping$old)]
-  ) %>%
-  filter(!is.na(from) & !is.na(to))
+    from = as.character(from),
+    to = as.character(to)
+  )
 
+# Remove self-connections and duplicate connections
+connections_my_corrected <- all_combinations %>%
+  filter(from != to) %>%  # Remove self-connections
+  mutate(
+    pair = pmin(from, to),
+    pair_to = pmax(from, to)
+  ) %>%
+  distinct(pair, pair_to) %>%  # Remove duplicates
+  select(from = pair, to = pair_to)
+
+# Convert node names to indices
 from <- match(connections_my_corrected$from, V(mygraph)$name)
 to <- match(connections_my_corrected$to, V(mygraph)$name)
 
-# Plot the hierarchal edge bundle 
+# Plot the hierarchical edge bundle 
 ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
-  geom_conn_bundle(data = get_con(from = from, to = to), alpha = 0.5, colour="#69b3a2", tension = 0.8) +
-#  geom_node_point(aes(color = leaf), size = 2) +
-  geom_node_text(aes(x = x*1.05, y=y*1.05, filter = leaf, label=shortName, angle = angle, hjust=hjust), size=2, alpha=1) +
+  geom_conn_bundle(data = get_con(from = from, to = to), 
+                   alpha = 0.2,  # Reduced alpha for better visibility
+                   colour="#69b3a2", 
+                   tension = 1.5) +
+  geom_node_point(aes(filter = leaf), size = 2, color = "black") +
+  geom_node_text(aes(x = x*1.05, y=y*1.05, filter = leaf, label=shortName, angle = angle, hjust=hjust), 
+                 size=2, alpha=1) +
+  coord_fixed() +
+  theme_void() +
+  theme(
+    legend.position="none",
+    plot.margin=unit(c(0,0,0,0),"cm"),
+  ) +
+  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+```
+
+## Male data
+
+### Load data and create the dendrogram
+
+This code loads the male data, standardizes the data to one unit variance across sampled groups, calculates euclidean distances, performs hierarchical clustering and creates a dendrogram.
+
+```{r}
+
+# Step 1: Load and standardize the data
+data <- read_excel(here::here("Data/Mol_raw_data.xlsx"), sheet = 2)
+data <- as.data.frame(data)
+
+# Ensure the first column becomes the row names
+rownames(data) <- data[,1]
+data <- data[,-1]
+
+#Standardise the data 
+scaled_data <- vegan::decostand(data, method="standardize", MARGIN = 1)
+
+# Step 2: Calculate Euclidean distances
+dist_matrix <- dist(scaled_data, method = "euclidean")
+
+# Step 3: Apply hierarchical clustering
+hc <- hclust(dist_matrix, method = "ward.D2")
+
+# Step 4 : Convert to dendrogram 
+dendro <- as.dendrogram(hc)
+```
+
+### Create dataframes 
+This code creates three dataframes necessary for plotting the charts: edges, vertices and connections
+
+```{r}
+
+#Step 5: Use ggraph 
+hierarchy_graph = as_tbl_graph(dendro)
+
+#Hierarchal dataframe 
+edge_df <- hierarchy_graph %>%
+  activate(edges) %>%
+  as_tibble() %>%
+  rename(from = from, to = to)
+
+# Extract vertices dataframe
+vertex_df <- hierarchy_graph %>%
+  activate(nodes) %>%
+  as_tibble() %>%
+  mutate(node_id = row_number())
+
+vertices_my <- vertex_df %>%
+  mutate(id = row_number(),
+         name = label,
+         shortName = label,  # Assuming you don't have a shorter name
+         group = ifelse(leaf, "leaf", "internal")) %>%
+  select(id, name, shortName, group, leaf, height, members) %>%
+  arrange(name) %>%
+  mutate(name = factor(name, levels = unique(name)))
+
+# Check for NA or empty names and replace them with a placeholder
+vertices_my <- vertices_my %>%
+  mutate(shortName = ifelse(is.na(shortName) | shortName == "", paste0("Node", row_number()), shortName)) %>%
+  mutate(name = ifelse(is.na(name) | name == "", paste0("Node_", row_number()), name))
+
+# Create connections_my dataframe
+connections_my_df <- edge_df %>%
+  left_join(vertex_df, by = c("from" = "node_id")) %>%
+  left_join(vertex_df, by = c("to" = "node_id"), suffix = c("_from", "_to"))
+
+connections_my <- connections_my_df %>%
+  select(from, to) %>% #This selects only the 'from' and 'to' columns from the original dataframe.
+  mutate(from = vertices_my$name[from],
+         to = vertices_my$name[to]) %>% #This replaces the values in the 'from' and 'to' columns with corresponding names from the vertices_my dataframe.
+  distinct() #This removes any duplicate rows from the resulting dataframe.
+
+connections_my <- connections_my %>%
+  filter(from != "" & to != "") #This keeps only the rows where from and to are not empty strings 
+
+# Preparation to draw labels properly:
+# Extract vertex data
+vertices_my <- hierarchy_graph %>%
+  activate(nodes) %>%
+  as_tibble() %>%
+  mutate(
+    id = row_number(),
+    name = label,
+    shortName = label,  # Keep original labels
+    group = ifelse(leaf, "leaf", "internal"),
+    unique_name = make.unique(as.character(name), sep = "_")
+  ) %>%
+  select(id, name, shortName, unique_name, group, leaf, height, members)
+
+# Correct any empty or NA names only for internal nodes
+vertices_my <- vertices_my %>%
+  mutate(
+    name = ifelse(!leaf & (is.na(name) | name == ""), paste0("Node_", row_number()), name),
+    shortName = ifelse(!leaf & (is.na(shortName) | shortName == ""), paste0("Node", row_number()), shortName)
+  )
+
+# Prepare label angles for leaves
+leaf_vertices <- vertices_my %>% 
+  filter(leaf) %>%
+  mutate(
+    leaf_id = row_number(),
+    angle = 90 - 360 * (leaf_id - 1) / n(),
+    hjust = ifelse(angle < -90, 1, 0),
+    angle = ifelse(angle < -90, angle + 180, angle)
+  )
+
+# Update vertices_my with leaf angles
+vertices_my <- vertices_my %>%
+  left_join(leaf_vertices %>% select(id, angle, hjust), by = "id")
+
+```
+
+### Plot the circular dendrogram 
+
+```{r}
+
+#Create the graph object 
+mygraph <- graph_from_data_frame(edge_df, vertices = vertices_my)
+
+# Basic dendrogram ----
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
+  geom_edge_link(size = 0.4, alpha = 0.1) +
+  geom_node_text(aes(x = x*1.01, y = y*1.01, filter = leaf, label = shortName, angle = angle, hjust = hjust), size = 1.5, alpha = 1) +
+  coord_fixed() +
+  theme_void() +
+  theme(
+    legend.position = "none",
+    plot.margin = unit(c(0,0,0,0),"cm"),
+  ) +
+  expand_limits(x = c(-1.2, 1.2), y = c(-1.2, 1.2))
+
+```
+
+### Plot the hierarchal edge bundles 
+
+```{r}
+#Correct the connections_my dataframe with valid connections 
+# Get leaf nodes
+leaf_nodes <- V(mygraph)$name[V(mygraph)$leaf]
+
+# Create all possible combinations of leaf nodes
+all_combinations <- expand.grid(from = leaf_nodes, to = leaf_nodes) %>%
+  mutate(
+    from = as.character(from),
+    to = as.character(to)
+  )
+
+# Remove self-connections and duplicate connections
+connections_my_corrected <- all_combinations %>%
+  filter(from != to) %>%  # Remove self-connections
+  mutate(
+    pair = pmin(from, to),
+    pair_to = pmax(from, to)
+  ) %>%
+  distinct(pair, pair_to) %>%  # Remove duplicates
+  select(from = pair, to = pair_to)
+
+# Convert node names to indices
+from <- match(connections_my_corrected$from, V(mygraph)$name)
+to <- match(connections_my_corrected$to, V(mygraph)$name)
+
+# Plot the hierarchical edge bundle 
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
+  geom_conn_bundle(data = get_con(from = from, to = to), 
+                   alpha = 0.2,  # Reduced alpha for better visibility
+                   colour="#69b3a2", 
+                   tension = 1.5) +
+  geom_node_point(aes(filter = leaf), size = 2, color = "black") +
+  geom_node_text(aes(x = x*1.05, y=y*1.05, filter = leaf, label=shortName, angle = angle, hjust=hjust), 
+                 size=2, alpha=1) +
   coord_fixed() +
   theme_void() +
   theme(

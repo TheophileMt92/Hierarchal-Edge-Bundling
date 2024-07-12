@@ -27,6 +27,7 @@ hc <- hclust(dist_matrix, method = "ward.D2")
 
 # Step 4 : Convert to dendrogram 
 dendro <- as.dendrogram(hc)
+plot(dendro)
 
 #Step 5: Use ggraph 
 hierarchy_graph = as_tbl_graph(dendro)
@@ -124,36 +125,39 @@ ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
 # Use Hierarchal Edge Bundling 
 
 #Correct the connections_my dataframe with valid connections 
-node_mapping_1 <- data.frame(
-  old = paste0("Node_", 1:41),
-  new = V(mygraph)$name
-)
-
+# Get leaf nodes
 leaf_nodes <- V(mygraph)$name[V(mygraph)$leaf]
-numeric_nodes <- as.character(1:length(leaf_nodes))
 
-node_mapping_2 <- data.frame(
-  old = numeric_nodes,
-  new = leaf_nodes
-)
-
-node_mapping <- rbind(node_mapping_1, node_mapping_2)
-
-connections_my_corrected <- connections_my %>%
+# Create all possible combinations of leaf nodes
+all_combinations <- expand.grid(from = leaf_nodes, to = leaf_nodes) %>%
   mutate(
-    from = node_mapping$new[match(from, node_mapping$old)],
-    to = node_mapping$new[match(to, node_mapping$old)]
-  ) %>%
-  filter(!is.na(from) & !is.na(to))
+    from = as.character(from),
+    to = as.character(to)
+  )
 
+# Remove self-connections and duplicate connections
+connections_my_corrected <- all_combinations %>%
+  filter(from != to) %>%  # Remove self-connections
+  mutate(
+    pair = pmin(from, to),
+    pair_to = pmax(from, to)
+  ) %>%
+  distinct(pair, pair_to) %>%  # Remove duplicates
+  select(from = pair, to = pair_to)
+
+# Convert node names to indices
 from <- match(connections_my_corrected$from, V(mygraph)$name)
 to <- match(connections_my_corrected$to, V(mygraph)$name)
 
-# Plot the hierarchal edge bundle 
+# Plot the hierarchical edge bundle 
 ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
-  geom_conn_bundle(data = get_con(from = from, to = to), alpha = 0.5, colour="#69b3a2", tension = 0.8) +
-#  geom_node_point(aes(color = leaf), size = 2) +
-  geom_node_text(aes(x = x*1.05, y=y*1.05, filter = leaf, label=shortName, angle = angle, hjust=hjust), size=2, alpha=1) +
+  geom_conn_bundle(data = get_con(from = from, to = to), 
+                   alpha = 0.2,  # Reduced alpha for better visibility
+                   colour="#69b3a2", 
+                   tension = 1.5) +
+  geom_node_point(aes(filter = leaf), size = 2, color = "black") +
+  geom_node_text(aes(x = x*1.05, y=y*1.05, filter = leaf, label=shortName, angle = angle, hjust=hjust), 
+                 size=2, alpha=1) +
   coord_fixed() +
   theme_void() +
   theme(
@@ -161,4 +165,5 @@ ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
     plot.margin=unit(c(0,0,0,0),"cm"),
   ) +
   expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+
 
