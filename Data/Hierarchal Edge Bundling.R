@@ -63,13 +63,13 @@ connections_my_df <- edge_df %>%
   left_join(vertex_df, by = c("to" = "node_id"), suffix = c("_from", "_to"))
 
 connections_my <- connections_my_df %>%
-  select(from, to) %>%
+  select(from, to) %>% #This selects only the 'from' and 'to' columns from the original dataframe.
   mutate(from = vertices_my$name[from],
-         to = vertices_my$name[to]) %>%
-  distinct()
+         to = vertices_my$name[to]) %>% #This replaces the values in the 'from' and 'to' columns with corresponding names from the vertices_my dataframe.
+  distinct() #This removes any duplicate rows from the resulting dataframe.
 
 connections_my <- connections_my %>%
-  filter(from != "" & to != "")
+  filter(from != "" & to != "") #This keeps only the rows where from and to are not empty strings 
 
 # Preparation to draw labels properly:
 # Extract vertex data
@@ -106,16 +106,10 @@ leaf_vertices <- vertices_my %>%
 vertices_my <- vertices_my %>%
   left_join(leaf_vertices %>% select(id, angle, hjust), by = "id")
 
-library(igraph)
+#Create the graph object 
 mygraph <- graph_from_data_frame(edge_df, vertices = vertices_my)
 
-from <- match(connections_my$from, vertices_my$name)
-to <- match(connections_my$to, vertices_my$name)
-
-library(ggraph)
-library(ggplot2)
-
-# Basic dendrogram
+# Basic dendrogram ----
 ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   geom_edge_link(size = 0.4, alpha = 0.1) +
   geom_node_text(aes(x = x*1.01, y = y*1.01, filter = leaf, label = shortName, angle = angle, hjust = hjust), size = 1.5, alpha = 1) +
@@ -127,16 +121,44 @@ ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   ) +
   expand_limits(x = c(-1.2, 1.2), y = c(-1.2, 1.2))
 
+# Use Hierarchal Edge Bundling 
 
-# Make the Hierarchal Edge Bundling plot 
+#Correct the connections_my dataframe with valid connections 
+node_mapping_1 <- data.frame(
+  old = paste0("Node_", 1:41),
+  new = V(mygraph)$name
+)
+
+leaf_nodes <- V(mygraph)$name[V(mygraph)$leaf]
+numeric_nodes <- as.character(1:length(leaf_nodes))
+
+node_mapping_2 <- data.frame(
+  old = numeric_nodes,
+  new = leaf_nodes
+)
+
+node_mapping <- rbind(node_mapping_1, node_mapping_2)
+
+connections_my_corrected <- connections_my %>%
+  mutate(
+    from = node_mapping$new[match(from, node_mapping$old)],
+    to = node_mapping$new[match(to, node_mapping$old)]
+  ) %>%
+  filter(!is.na(from) & !is.na(to))
+
+from <- match(connections_my_corrected$from, V(mygraph)$name)
+to <- match(connections_my_corrected$to, V(mygraph)$name)
+
+# Plot the hierarchal edge bundle 
 ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
-  geom_conn_bundle(data = get_con(from = from, to = to), alpha = 0.1, colour="#69b3a2") +
-  geom_node_text(aes(x = x*1.01, y=y*1.01, filter = leaf, label=shortName, angle = angle, hjust=hjust), size=1.5, alpha=1) +
+  geom_conn_bundle(data = get_con(from = from, to = to), alpha = 0.5, colour="#69b3a2", tension = 0.8) +
+#  geom_node_point(aes(color = leaf), size = 2) +
+  geom_node_text(aes(x = x*1.05, y=y*1.05, filter = leaf, label=shortName, angle = angle, hjust=hjust), size=2, alpha=1) +
   coord_fixed() +
   theme_void() +
   theme(
     legend.position="none",
     plot.margin=unit(c(0,0,0,0),"cm"),
   ) +
-  expand_limits(x = c(-1.2, 1.2), y = c(-1.2, 1.2))
+  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
 
