@@ -1,3 +1,30 @@
+---
+title: "Hierarchal Edge Bundling"
+author: "Théophile L. Mouton"
+date: "2024-07-12"
+format: html
+editor: visual
+code-fold: true
+code-tools: true
+toc: true
+toc-location: right
+css: custom.css
+self-contained: true
+execute:
+  warning: false
+  results: hide
+---
+
+Constructing Hierarchal Edge Bundling charts for molecular data. One for male, the other for females.
+
+## Female data
+
+### Load required libraries, data and create the dendrogram
+
+This code loads necessary R packages, loads the female data, standardizes the data to one unit variance accross sampled groups, calculates euclidean dissimilarities, performs hierarchal clustering and creates a dendrogram from the output.
+
+```{r}
+
 # Load required libraries
 library(readxl)
 library(dplyr)
@@ -9,7 +36,7 @@ library(ggraph)
 library(tidygraph)
 
 # Step 1: Load and standardize the data
-data <- read_excel("Data/Mol_raw_data.xlsx", sheet = 1)
+data <- read_excel(here::here("Data/Mol_raw_data.xlsx"), sheet = 1)
 data <- as.data.frame(data)
 
 # Ensure the first column becomes the row names
@@ -27,6 +54,11 @@ hc <- hclust(dist_matrix, method = "ward.D2")
 
 # Step 4 : Convert to dendrogram 
 dendro <- as.dendrogram(hc)
+```
+
+### Create the dataframes necessary for plotting the charts: edges, vertices and connections
+
+```{r}
 
 #Step 5: Use ggraph 
 hierarchy_graph = as_tbl_graph(dendro)
@@ -106,6 +138,12 @@ leaf_vertices <- vertices_my %>%
 vertices_my <- vertices_my %>%
   left_join(leaf_vertices %>% select(id, angle, hjust), by = "id")
 
+```
+
+### Plot the circular dendrogram 
+
+```{r}
+
 #Create the graph object 
 mygraph <- graph_from_data_frame(edge_df, vertices = vertices_my)
 
@@ -121,8 +159,11 @@ ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   ) +
   expand_limits(x = c(-1.2, 1.2), y = c(-1.2, 1.2))
 
-# Use Hierarchal Edge Bundling 
+```
 
+### Plot the hierarchal edge bundles 
+
+```{r}
 #Correct the connections_my dataframe with valid connections 
 node_mapping_1 <- data.frame(
   old = paste0("Node_", 1:41),
@@ -161,4 +202,4 @@ ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
     plot.margin=unit(c(0,0,0,0),"cm"),
   ) +
   expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
-
+```
