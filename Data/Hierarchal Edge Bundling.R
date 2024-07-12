@@ -6,6 +6,7 @@ library(ggplot2)
 library(ggdendro)
 library(igraph)
 library(ggraph)
+library(tidygraph)
 
 # Step 1: Load and standardize the data
 data <- read_excel("Data/Mol_raw_data.xlsx", sheet = 1)
@@ -28,4 +29,114 @@ hc <- hclust(dist_matrix, method = "ward.D2")
 dendro <- as.dendrogram(hc)
 
 #Step 5: Use ggraph 
-hierarchy = as_tbl_graph(dendro)
+hierarchy_graph = as_tbl_graph(dendro)
+
+#Hierarchal dataframe 
+edge_df <- hierarchy_graph %>%
+  activate(edges) %>%
+  as_tibble() %>%
+  rename(from = from, to = to)
+
+# Extract vertices dataframe
+vertex_df <- hierarchy_graph %>%
+  activate(nodes) %>%
+  as_tibble() %>%
+  mutate(node_id = row_number())
+
+vertices_my <- vertex_df %>%
+  mutate(id = row_number(),
+         name = label,
+         shortName = label,  # Assuming you don't have a shorter name
+         group = ifelse(leaf, "leaf", "internal")) %>%
+  select(id, name, shortName, group, leaf, height, members) %>%
+  arrange(name) %>%
+  mutate(name = factor(name, levels = unique(name)))
+
+# Check for NA or empty names and replace them with a placeholder
+vertices_my <- vertices_my %>%
+  mutate(shortName = ifelse(is.na(shortName) | shortName == "", paste0("Node", row_number()), shortName)) %>%
+  mutate(name = ifelse(is.na(name) | name == "", paste0("Node_", row_number()), name))
+
+# Create connections_my dataframe
+connections_my_df <- edge_df %>%
+  left_join(vertex_df, by = c("from" = "node_id")) %>%
+  left_join(vertex_df, by = c("to" = "node_id"), suffix = c("_from", "_to"))
+
+connections_my <- connections_my_df %>%
+  select(from, to) %>%
+  mutate(from = vertices_my$name[from],
+         to = vertices_my$name[to]) %>%
+  distinct()
+
+connections_my <- connections_my %>%
+  filter(from != "" & to != "")
+
+# Preparation to draw labels properly:
+# Extract vertex data
+vertices_my <- graph %>%
+  activate(nodes) %>%
+  as_tibble() %>%
+  mutate(
+    id = row_number(),
+    name = label,
+    shortName = label,  # Keep original labels
+    group = ifelse(leaf, "leaf", "internal"),
+    unique_name = make.unique(as.character(name), sep = "_")
+  ) %>%
+  select(id, name, shortName, unique_name, group, leaf, height, members)
+
+# Correct any empty or NA names only for internal nodes
+vertices_my <- vertices_my %>%
+  mutate(
+    name = ifelse(!leaf & (is.na(name) | name == ""), paste0("Node_", row_number()), name),
+    shortName = ifelse(!leaf & (is.na(shortName) | shortName == ""), paste0("Node", row_number()), shortName)
+  )
+
+# Prepare label angles for leaves
+leaf_vertices <- vertices_my %>% 
+  filter(leaf) %>%
+  mutate(
+    leaf_id = row_number(),
+    angle = 90 - 360 * (leaf_id - 1) / n(),
+    hjust = ifelse(angle < -90, 1, 0),
+    angle = ifelse(angle < -90, angle + 180, angle)
+  )
+
+# Update vertices_my with leaf angles
+vertices_my <- vertices_my %>%
+  left_join(leaf_vertices %>% select(id, angle, hjust), by = "id")
+
+library(igraph)
+mygraph <- graph_from_data_frame(edge_df, vertices = vertices_my)
+
+from <- match(connections_my$from, vertices_my$name)
+to <- match(connections_my$to, vertices_my$name)
+
+library(ggraph)
+library(ggplot2)
+
+# Basic dendrogram
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
+  geom_edge_link(size = 0.4, alpha = 0.1) +
+  geom_node_text(aes(x = x*1.01, y = y*1.01, filter = leaf, label = shortName, angle = angle, hjust = hjust), size = 1.5, alpha = 1) +
+  coord_fixed() +
+  theme_void() +
+  theme(
+    legend.position = "none",
+    plot.margin = unit(c(0,0,0,0),"cm"),
+  ) +
+  expand_limits(x = c(-1.2, 1.2), y = c(-1.2, 1.2))
+
+
+# Make the Hierarchal Edge Bundling plot 
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
+  geom_conn_bundle(data = get_con(from = from, to = to), alpha = 0.1, colour="#69b3a2") +
+  geom_node_text(aes(x = x*1.01, y=y*1.01, filter = leaf, label=shortName, angle = angle, hjust=hjust), size=1.5, alpha=1) +
+  coord_fixed() +
+  theme_void() +
+  theme(
+    legend.position="none",
+    plot.margin=unit(c(0,0,0,0),"cm"),
+  ) +
+  expand_limits(x = c(-1.2, 1.2), y = c(-1.2, 1.2))
+
