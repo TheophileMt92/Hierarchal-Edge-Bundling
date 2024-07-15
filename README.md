@@ -1,4 +1,4 @@
-# Hierarchal-Edge-Bundling
-Hierarchal Edge Bundling for Maria Paulina Correa
+# Hierarchical-Edge-Bundling
+Hierarchical Edge Bundling on molecular data for Maria Paulina Correa
 
 
