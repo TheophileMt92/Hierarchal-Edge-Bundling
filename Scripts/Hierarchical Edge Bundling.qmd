@@ -217,6 +217,131 @@ ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
 ```
 
+### Nbclust
+
+The NbClust function is being used to determine the optimal number of clusters in our data. It applies multiple clustering validity indices and methods to suggest the best number of clusters, providing a consensus view based on various criteria to help make a more robust decision about the appropriate cluster count for our dataset.
+
+```{r, results='asis', fig.show='hide', message=FALSE, warning=FALSE}
+library(stringr)
+
+library(NbClust)
+methods <- c("ward.D2")
+
+for (m in methods) {
+  # Capture all output
+  output <- capture.output({
+    result <- NbClust(data = scaled_data, 
+                      distance = "euclidean", 
+                      min.nc = 2, 
+                      max.nc = 10, 
+                      method = m, 
+                      index = "all")
+  })
+  
+  # Join the output into a single string
+  output_text <- paste(output, collapse = "\n")
+  
+  # Split the output by the asterisk separator
+  split_output <- str_split(output_text, "\\*{10,}")[[1]]
+  
+  # Check if we have at least 3 parts
+  if (length(split_output) >= 3) {
+    # Trim whitespace from the second part
+    second_part <- str_trim(split_output[2])
+    
+    # Split the second part into lines
+    lines <- str_split(second_part, "\n")[[1]]
+    
+    # Format the output
+    formatted_output <- character(0)
+    for (line in lines) {
+      if (str_detect(line, "Conclusion")) {
+        formatted_output <- c(formatted_output, "", "Conclusion", "")
+      } else if (str_detect(line, "^\\*")) {
+        formatted_output <- c(formatted_output, line)
+      }
+    }
+    
+    # Join the formatted lines
+    formatted_output <- paste(formatted_output, collapse = "\n")
+    
+    # Print the results
+    cat(paste("Results for method:", m, "\n\n"))
+    cat(formatted_output)
+    cat("\n\n")  # Add some space between results for different methods
+  } else {
+    cat(paste("Unexpected output format for method:", m, "\n"))
+  }
+}
+```
+
+### Plot the clusters 
+
+```{r}
+
+cluster_groups <- cutree(hc, k = 3)
+
+# Add cluster information to vertices_my
+vertices_my <- vertices_my %>%
+  mutate(cluster = factor(cluster_groups[match(name, names(cluster_groups))]))
+
+library(RColorBrewer)
+
+# Select three colors from the "Paired" palette
+cluster_colors <- brewer.pal(3, "Paired")
+
+#Create the graph object 
+mygraph <- graph_from_data_frame(edge_df, vertices = vertices_my)
+
+#Correct the connections_my dataframe with valid connections 
+# Get leaf nodes
+leaf_nodes <- V(mygraph)$name[V(mygraph)$leaf]
+
+# Create all possible combinations of leaf nodes
+all_combinations <- expand.grid(from = leaf_nodes, to = leaf_nodes) %>%
+  mutate(
+    from = as.character(from),
+    to = as.character(to)
+  )
+
+# Remove self-connections and duplicate connections
+connections_my_corrected <- all_combinations %>%
+  filter(from != to) %>%  # Remove self-connections
+  mutate(
+    pair = pmin(from, to),
+    pair_to = pmax(from, to)
+  ) %>%
+  distinct(pair, pair_to) %>%  # Remove duplicates
+  select(from = pair, to = pair_to)
+
+# Convert node names to indices
+from <- match(connections_my_corrected$from, V(mygraph)$name)
+to <- match(connections_my_corrected$to, V(mygraph)$name)
+
+# Plot the hierarchical edge bundle with colored points
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
+  geom_conn_bundle(data = get_con(from = from, to = to), 
+                   tension = 1.5,
+                   aes(colour=after_stat(index))) +
+  scale_edge_colour_distiller(palette = "RdPu") +
+  geom_node_point(aes(filter = leaf, color = cluster, 
+                      x = x * 1.075, y = y * 1.075),  # Move points slightly outward
+                  size = 5, alpha = 0.6) +
+  geom_node_text(aes(x = x * 1.15, y = y * 1.15,  # Move text even further outward
+                     filter = leaf, label = shortName, 
+                     angle = angle, hjust = hjust), 
+                 size = 2, alpha = 1) +
+  scale_color_manual(values = cluster_colors) +
+  coord_fixed() +
+  theme_void() +
+  theme(
+    legend.position = "none",
+    plot.margin = unit(c(0,0,0,0), "cm"),
+  ) +
+  expand_limits(x = c(-1.5, 1.5), y = c(-1.5, 1.5))  # Further expanded limits to accommodate text and points
+
+```
+
 ## Male data
 
 ### Load data and create the dendrogram
@@ -403,6 +528,131 @@ ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
     plot.margin=unit(c(0,0,0,0),"cm"),
   ) +
   expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+```
+
+### Nbclust
+
+The NbClust function is being used to determine the optimal number of clusters in our data. It applies multiple clustering validity indices and methods to suggest the best number of clusters, providing a consensus view based on various criteria to help make a more robust decision about the appropriate cluster count for our dataset.
+
+```{r, results='asis', fig.show='hide', message=FALSE, warning=FALSE}
+library(stringr)
+
+library(NbClust)
+methods <- c("ward.D2")
+
+for (m in methods) {
+  # Capture all output
+  output <- capture.output({
+    result <- NbClust(data = scaled_data, 
+                      distance = "euclidean", 
+                      min.nc = 2, 
+                      max.nc = 10, 
+                      method = m, 
+                      index = "all")
+  })
+  
+  # Join the output into a single string
+  output_text <- paste(output, collapse = "\n")
+  
+  # Split the output by the asterisk separator
+  split_output <- str_split(output_text, "\\*{10,}")[[1]]
+  
+  # Check if we have at least 3 parts
+  if (length(split_output) >= 3) {
+    # Trim whitespace from the second part
+    second_part <- str_trim(split_output[2])
+    
+    # Split the second part into lines
+    lines <- str_split(second_part, "\n")[[1]]
+    
+    # Format the output
+    formatted_output <- character(0)
+    for (line in lines) {
+      if (str_detect(line, "Conclusion")) {
+        formatted_output <- c(formatted_output, "", "Conclusion", "")
+      } else if (str_detect(line, "^\\*")) {
+        formatted_output <- c(formatted_output, line)
+      }
+    }
+    
+    # Join the formatted lines
+    formatted_output <- paste(formatted_output, collapse = "\n")
+    
+    # Print the results
+    cat(paste("Results for method:", m, "\n\n"))
+    cat(formatted_output)
+    cat("\n\n")  # Add some space between results for different methods
+  } else {
+    cat(paste("Unexpected output format for method:", m, "\n"))
+  }
+}
+```
+
+### Plot the clusters 
+
+```{r}
+
+cluster_groups <- cutree(hc, k = 2)
+
+# Add cluster information to vertices_my
+vertices_my <- vertices_my %>%
+  mutate(cluster = factor(cluster_groups[match(name, names(cluster_groups))]))
+
+library(RColorBrewer)
+
+# Select three colors from the "Paired" palette
+cluster_colors <- brewer.pal(2, "Paired")
+
+#Create the graph object 
+mygraph <- graph_from_data_frame(edge_df, vertices = vertices_my)
+
+#Correct the connections_my dataframe with valid connections 
+# Get leaf nodes
+leaf_nodes <- V(mygraph)$name[V(mygraph)$leaf]
+
+# Create all possible combinations of leaf nodes
+all_combinations <- expand.grid(from = leaf_nodes, to = leaf_nodes) %>%
+  mutate(
+    from = as.character(from),
+    to = as.character(to)
+  )
+
+# Remove self-connections and duplicate connections
+connections_my_corrected <- all_combinations %>%
+  filter(from != to) %>%  # Remove self-connections
+  mutate(
+    pair = pmin(from, to),
+    pair_to = pmax(from, to)
+  ) %>%
+  distinct(pair, pair_to) %>%  # Remove duplicates
+  select(from = pair, to = pair_to)
+
+# Convert node names to indices
+from <- match(connections_my_corrected$from, V(mygraph)$name)
+to <- match(connections_my_corrected$to, V(mygraph)$name)
+
+# Plot the hierarchical edge bundle with colored points
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
+  geom_conn_bundle(data = get_con(from = from, to = to), 
+                   tension = 1.5,
+                   aes(colour=after_stat(index))) +
+  scale_edge_colour_distiller(palette = "BuPu") +
+  geom_node_point(aes(filter = leaf, color = cluster, 
+                      x = x * 1.075, y = y * 1.075),  # Move points slightly outward
+                  size = 5, alpha = 0.6) +
+  geom_node_text(aes(x = x * 1.15, y = y * 1.15,  # Move text even further outward
+                     filter = leaf, label = shortName, 
+                     angle = angle, hjust = hjust), 
+                 size = 2, alpha = 1) +
+  scale_color_manual(values = cluster_colors) +
+  coord_fixed() +
+  theme_void() +
+  theme(
+    legend.position = "none",
+    plot.margin = unit(c(0,0,0,0), "cm"),
+  ) +
+  expand_limits(x = c(-1.5, 1.5), y = c(-1.5, 1.5))  # Further expanded limits to accommodate text and points
+
 ```
 
 # Molecular analytes and cardiometabolic health markers 
@@ -595,6 +845,202 @@ ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
 ```
 
+### With cardiometabolic biomarkers
+
+This code plots a hierarchical edge bundling chart from the hierarchy defined in the dendrogram highlighting which markers are molecular analytes and which are cardiometabolic health markers
+
+```{r}
+# Step 1: Load and standardize the data
+markers <- read_excel(here::here("Data/Mol_raw_data.xlsx"), sheet = 5)
+markers_females=markers[,c(2:3)]
+
+library(dplyr)
+
+vertices_my <- vertices_my %>%
+  left_join(markers_females, by = c("name" = "Females")) %>%
+  rename(Markers = Type) %>%
+  mutate(Markers = factor(Markers))
+
+# Define colors for the two groups
+marker_levels <- levels(vertices_my$Markers)
+group_colors <- setNames(c("black", "#D2B48C"), marker_levels)
+
+mygraph <- graph_from_data_frame(edge_df, vertices = vertices_my)
+
+#Correct the connections_my dataframe with valid connections 
+# Get leaf nodes
+leaf_nodes <- V(mygraph)$name[V(mygraph)$leaf]
+
+# Create all possible combinations of leaf nodes
+all_combinations <- expand.grid(from = leaf_nodes, to = leaf_nodes) %>%
+  mutate(
+    from = as.character(from),
+    to = as.character(to)
+  )
+
+# Remove self-connections and duplicate connections
+connections_my_corrected <- all_combinations %>%
+  filter(from != to) %>%  # Remove self-connections
+  mutate(
+    pair = pmin(from, to),
+    pair_to = pmax(from, to)
+  ) %>%
+  distinct(pair, pair_to) %>%  # Remove duplicates
+  select(from = pair, to = pair_to)
+
+# Convert node names to indices
+from <- match(connections_my_corrected$from, V(mygraph)$name)
+to <- match(connections_my_corrected$to, V(mygraph)$name)
+
+# Plot the hierarchical edge bundle with colored points
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
+  geom_conn_bundle(data = get_con(from = from, to = to), 
+                   tension = 1.5,
+                   aes(colour = after_stat(index)),
+                   show.legend = FALSE) +  # Hide edge color legend
+  scale_edge_colour_distiller(palette = "RdPu") +
+  geom_node_point(aes(filter = leaf, color = Markers  # Use 'group' for coloring
+                      ),
+                  size = 2, alpha = 1) +
+  geom_node_text(aes(x = x * 1.05, y = y * 1.05,
+                     filter = leaf, label = shortName, 
+                     angle = angle, hjust = hjust), 
+                 size = 2, alpha = 1) +
+  scale_color_manual(values = group_colors, name = NULL) +  # Name the legend
+  coord_fixed() +
+  theme_void() +
+  theme(
+    legend.position = "bottom",
+    plot.margin = unit(c(0,0,0,0),"cm"),
+  ) +
+  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+```
+
+### Nbclust
+
+The NbClust function is being used to determine the optimal number of clusters in our data. It applies multiple clustering validity indices and methods to suggest the best number of clusters, providing a consensus view based on various criteria to help make a more robust decision about the appropriate cluster count for our dataset.
+
+```{r, results='asis', fig.show='hide', message=FALSE, warning=FALSE}
+library(stringr)
+
+library(NbClust)
+methods <- c("ward.D2")
+
+for (m in methods) {
+  # Capture all output
+  output <- capture.output({
+    result <- NbClust(data = scaled_data, 
+                      distance = "euclidean", 
+                      min.nc = 2, 
+                      max.nc = 10, 
+                      method = m, 
+                      index = "all")
+  })
+  
+  # Join the output into a single string
+  output_text <- paste(output, collapse = "\n")
+  
+  # Split the output by the asterisk separator
+  split_output <- str_split(output_text, "\\*{10,}")[[1]]
+  
+  # Check if we have at least 3 parts
+  if (length(split_output) >= 3) {
+    # Trim whitespace from the second part
+    second_part <- str_trim(split_output[2])
+    
+    # Split the second part into lines
+    lines <- str_split(second_part, "\n")[[1]]
+    
+    # Format the output
+    formatted_output <- character(0)
+    for (line in lines) {
+      if (str_detect(line, "Conclusion")) {
+        formatted_output <- c(formatted_output, "", "Conclusion", "")
+      } else if (str_detect(line, "^\\*")) {
+        formatted_output <- c(formatted_output, line)
+      }
+    }
+    
+    # Join the formatted lines
+    formatted_output <- paste(formatted_output, collapse = "\n")
+    
+    # Print the results
+    cat(paste("Results for method:", m, "\n\n"))
+    cat(formatted_output)
+    cat("\n\n")  # Add some space between results for different methods
+  } else {
+    cat(paste("Unexpected output format for method:", m, "\n"))
+  }
+}
+```
+
+### Plot the clusters 
+
+```{r}
+
+cluster_groups <- cutree(hc, k = 3)
+
+# Add cluster information to vertices_my
+vertices_my <- vertices_my %>%
+  mutate(cluster = factor(cluster_groups[match(name, names(cluster_groups))]))
+
+library(RColorBrewer)
+
+# Select three colors from the "Paired" palette
+cluster_colors <- brewer.pal(3, "Paired")
+
+#Create the graph object 
+mygraph <- graph_from_data_frame(edge_df, vertices = vertices_my)
+
+#Correct the connections_my dataframe with valid connections 
+# Get leaf nodes
+leaf_nodes <- V(mygraph)$name[V(mygraph)$leaf]
+
+# Create all possible combinations of leaf nodes
+all_combinations <- expand.grid(from = leaf_nodes, to = leaf_nodes) %>%
+  mutate(
+    from = as.character(from),
+    to = as.character(to)
+  )
+
+# Remove self-connections and duplicate connections
+connections_my_corrected <- all_combinations %>%
+  filter(from != to) %>%  # Remove self-connections
+  mutate(
+    pair = pmin(from, to),
+    pair_to = pmax(from, to)
+  ) %>%
+  distinct(pair, pair_to) %>%  # Remove duplicates
+  select(from = pair, to = pair_to)
+
+# Convert node names to indices
+from <- match(connections_my_corrected$from, V(mygraph)$name)
+to <- match(connections_my_corrected$to, V(mygraph)$name)
+
+# Plot the hierarchical edge bundle with colored points
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
+  geom_conn_bundle(data = get_con(from = from, to = to), 
+                   tension = 1.5,
+                   aes(colour=after_stat(index))) +
+  scale_edge_colour_distiller(palette = "RdPu") +
+  geom_node_point(aes(filter = leaf, color = cluster, 
+                      x = x * 1.075, y = y * 1.075),  # Move points slightly outward
+                  size = 5, alpha = 0.6) +
+  geom_node_text(aes(x = x * 1.15, y = y * 1.15,  # Move text even further outward
+                     filter = leaf, label = shortName, 
+                     angle = angle, hjust = hjust), 
+                 size = 2, alpha = 1) +
+  scale_color_manual(values = cluster_colors) +
+  coord_fixed() +
+  theme_void() +
+  theme(
+    legend.position = "none",
+    plot.margin = unit(c(0,0,0,0), "cm"),
+  ) +
+  expand_limits(x = c(-1.5, 1.5), y = c(-1.5, 1.5))  # Further expanded limits to accommodate text and points
+
+```
+
 ## Male data
 
 ### Load data and create the dendrogram
@@ -781,4 +1227,206 @@ ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
     plot.margin=unit(c(0,0,0,0),"cm"),
   ) +
   expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+```
+
+### With cardiometabolic biomarkers
+
+This code plots a hierarchical edge bundling chart from the hierarchy defined in the dendrogram highlighting which markers are molecular analytes and which are cardiometabolic health markers
+
+```{r}
+# Step 1: Load and standardize the data
+markers <- read_excel(here::here("Data/Mol_raw_data.xlsx"), sheet = 5)
+markers_males=markers[,c(1:3)]
+
+library(dplyr)
+
+vertices_my <- vertices_my %>%
+  left_join(markers_males, by = c("name" = "Males")) %>%
+  rename(Markers = Type) %>%
+  mutate(Markers = factor(Markers))
+
+# Define colors for the two groups
+marker_levels <- levels(vertices_my$Markers)
+group_colors <- setNames(c("black", "#D2B48C"), marker_levels)
+
+mygraph <- graph_from_data_frame(edge_df, vertices = vertices_my)
+
+#Correct the connections_my dataframe with valid connections 
+# Get leaf nodes
+leaf_nodes <- V(mygraph)$name[V(mygraph)$leaf]
+
+# Create all possible combinations of leaf nodes
+all_combinations <- expand.grid(from = leaf_nodes, to = leaf_nodes) %>%
+  mutate(
+    from = as.character(from),
+    to = as.character(to)
+  )
+
+# Remove self-connections and duplicate connections
+connections_my_corrected <- all_combinations %>%
+  filter(from != to) %>%  # Remove self-connections
+  mutate(
+    pair = pmin(from, to),
+    pair_to = pmax(from, to)
+  ) %>%
+  distinct(pair, pair_to) %>%  # Remove duplicates
+  select(from = pair, to = pair_to)
+
+# Convert node names to indices
+from <- match(connections_my_corrected$from, V(mygraph)$name)
+to <- match(connections_my_corrected$to, V(mygraph)$name)
+
+# Plot the hierarchical edge bundle with colored points
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
+  geom_conn_bundle(data = get_con(from = from, to = to), 
+                   tension = 1.5,
+                   aes(colour = after_stat(index)),
+                   show.legend = FALSE) +  # Hide edge color legend
+  scale_edge_colour_distiller(palette = "BuPu") +
+  geom_node_point(aes(filter = leaf, color = Markers  # Use 'group' for coloring
+                      ),
+                  size = 2, alpha = 1) +
+  geom_node_text(aes(x = x * 1.05, y = y * 1.05,
+                     filter = leaf, label = shortName, 
+                     angle = angle, hjust = hjust), 
+                 size = 2, alpha = 1) +
+  scale_color_manual(values = group_colors, name = NULL) +  # Name the legend
+  coord_fixed() +
+  theme_void() +
+  theme(
+    legend.position = "bottom",
+    plot.margin = unit(c(0,0,0,0),"cm"),
+  ) +
+  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+```
+
+### Nbclust
+
+The NbClust function is being used to determine the optimal number of clusters in our data. It applies multiple clustering validity indices and methods to suggest the best number of clusters, providing a consensus view based on various criteria to help make a more robust decision about the appropriate cluster count for our dataset.
+
+```{r, results='asis', fig.show='hide', message=FALSE, warning=FALSE}
+library(NbClust)
+library(dplyr)
+library(purrr)
+
+all_indices <- c("kl", "ch", "hartigan", "cindex", "db", "silhouette", "duda", "pseudot2", 
+                 "beale", "ratkowsky", "ball", "ptbiserial", "gap", "mcclain", 
+                 "gamma", "gplus", "tau", "dunn", "hubert", "sdindex", "dindex", "sdbw")
+
+run_nbclust <- function(index) {
+  tryCatch({
+    # Suppress output
+    result <- capture.output({
+      nb_result <- NbClust(data = scaled_data, 
+                           distance = "euclidean", 
+                           min.nc = 2, 
+                           max.nc = 10, 
+                           method = "ward.D2", 
+                           index = index)
+    })
+    return(list(index = index, result = nb_result, error = NULL))
+  }, error = function(e) {
+    return(list(index = index, result = NULL, error = conditionMessage(e)))
+  })
+}
+
+results <- map(all_indices, run_nbclust)
+
+# Extract working indices and their results
+working_results <- results %>% 
+  keep(~ is.null(.$error)) %>% 
+  map(~ .$result)
+
+# Combine results
+if (length(working_results) > 0) {
+  combined_result <- list(
+    All.index = do.call(c, map(working_results, ~ .$All.index)),
+    Best.nc = do.call(rbind, map(working_results, ~ .$Best.nc)),
+    Best.partition = working_results[[1]]$Best.partition
+  )
+  
+  # Count the proposed best number of clusters
+  best_nc_counts <- table(combined_result$Best.nc[, 1])
+  
+  # Print results in the requested format
+  cat("Results for method: ward.D2\n\n")
+  cat("Among all indices:\n\n")
+  for (nc in sort(as.numeric(names(best_nc_counts)))) {
+    count <- best_nc_counts[as.character(nc)]
+    cat(sprintf("* %d proposed %d as the best number of clusters\n", count, nc))
+  }
+  
+  cat("\nConclusion\n\n")
+  best_nc <- as.numeric(names(which.max(best_nc_counts)))
+  cat(sprintf("According to the majority rule, the best number of clusters is %d\n", best_nc))
+} else {
+  cat("No indices worked successfully.\n")
+}
+```
+
+### Plot the clusters 
+
+```{r}
+
+cluster_groups <- cutree(hc, k = 10)
+
+# Add cluster information to vertices_my
+vertices_my <- vertices_my %>%
+  mutate(cluster = factor(cluster_groups[match(name, names(cluster_groups))]))
+
+library(RColorBrewer)
+
+# Select three colors from the "Paired" palette
+cluster_colors <- brewer.pal(10, "Paired")
+
+#Create the graph object 
+mygraph <- graph_from_data_frame(edge_df, vertices = vertices_my)
+
+#Correct the connections_my dataframe with valid connections 
+# Get leaf nodes
+leaf_nodes <- V(mygraph)$name[V(mygraph)$leaf]
+
+# Create all possible combinations of leaf nodes
+all_combinations <- expand.grid(from = leaf_nodes, to = leaf_nodes) %>%
+  mutate(
+    from = as.character(from),
+    to = as.character(to)
+  )
+
+# Remove self-connections and duplicate connections
+connections_my_corrected <- all_combinations %>%
+  filter(from != to) %>%  # Remove self-connections
+  mutate(
+    pair = pmin(from, to),
+    pair_to = pmax(from, to)
+  ) %>%
+  distinct(pair, pair_to) %>%  # Remove duplicates
+  select(from = pair, to = pair_to)
+
+# Convert node names to indices
+from <- match(connections_my_corrected$from, V(mygraph)$name)
+to <- match(connections_my_corrected$to, V(mygraph)$name)
+
+# Plot the hierarchical edge bundle with colored points
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
+  geom_conn_bundle(data = get_con(from = from, to = to), 
+                   tension = 1.5,
+                   aes(colour=after_stat(index))) +
+  scale_edge_colour_distiller(palette = "BuPu") +
+  geom_node_point(aes(filter = leaf, color = cluster, 
+                      x = x * 1.075, y = y * 1.075),  # Move points slightly outward
+                  size = 5, alpha = 0.6) +
+  geom_node_text(aes(x = x * 1.15, y = y * 1.15,  # Move text even further outward
+                     filter = leaf, label = shortName, 
+                     angle = angle, hjust = hjust), 
+                 size = 2, alpha = 1) +
+  scale_color_manual(values = cluster_colors) +
+  coord_fixed() +
+  theme_void() +
+  theme(
+    legend.position = "none",
+    plot.margin = unit(c(0,0,0,0), "cm"),
+  ) +
+  expand_limits(x = c(-1.5, 1.5), y = c(-1.5, 1.5))  # Further expanded limits to accommodate text and points
+
 ```
