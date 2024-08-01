@@ -207,17 +207,17 @@ h1 = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   scale_edge_colour_distiller(palette = "RdPu") +
   geom_node_point(aes(filter = leaf), size = 2, color = "black") +
   geom_node_text(aes(x = x*1.05, y=y*1.05, filter = leaf, label=shortName, angle = angle, hjust=hjust), 
-                 size=1.8, alpha=1) +
+                 size=2, alpha=1) +
   coord_fixed() +
   theme_void() +
   theme(
     legend.position="none",
     plot.margin=unit(c(0,0,0,0),"cm"),
   ) +
-  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+  expand_limits(x = c(-1.4, 1.4), y = c(-1.4, 1.4))
 h1 
 
-ggsave(here::here("Outputs", "HEB_1G_females.pdf"), h1, device = "pdf", width = 88, height = 88, units = "mm")
+ggsave(here::here("Outputs", "Second figures", "HEB_1G_females.pdf"), h1, device = "pdf", width = 88, height = 88, units = "mm")
 
 ```
 
@@ -333,7 +333,7 @@ h2 = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   geom_node_text(aes(x = x * 1.05, y = y * 1.05,  # Move text even further outward
                      filter = leaf, label = shortName, 
                      angle = angle, hjust = hjust), 
-                 size = 1.8, alpha = 1) +
+                 size = 2, alpha = 1) +
   scale_color_manual(values = cluster_colors) +
   coord_fixed() +
   theme_void() +
@@ -341,10 +341,10 @@ h2 = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
     legend.position = "none",
     plot.margin = unit(c(0,0,0,0), "cm"),
   ) +
-  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))  # Further expanded limits to accommodate text and points
+  expand_limits(x = c(-1.4, 1.4), y = c(-1.4, 1.4))  # Further expanded limits to accommodate text and points
 h2 
 
-ggsave(here::here("Outputs", "HEB_1G_females_clusters.pdf"), h2, device = "pdf", width = 88, height = 88, units = "mm")
+ggsave(here::here("Outputs", "Second figures", "HEB_1G_females_clusters.pdf"), h2, device = "pdf", width = 88, height = 88, units = "mm")
 
 
 ```
@@ -529,17 +529,17 @@ h3 = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   scale_edge_colour_distiller(palette = "BuPu") +
   geom_node_point(aes(filter = leaf), size = 2, color = "black") +
   geom_node_text(aes(x = x*1.05, y=y*1.05, filter = leaf, label=shortName, angle = angle, hjust=hjust), 
-                 size=2, alpha=1) +
+                 size=2.2, alpha=1) +
   coord_fixed() +
   theme_void() +
   theme(
     legend.position="none",
     plot.margin=unit(c(0,0,0,0),"cm"),
   ) +
-  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+  expand_limits(x = c(-1.4, 1.4), y = c(-1.4, 1.4))
 h3 
 
-ggsave(here::here("Outputs", "HEB_1G_males.pdf"), h3, device = "pdf", width = 88, height = 88, units = "mm")
+ggsave(here::here("Outputs", "Second figures", "HEB_1G_males.pdf"), h3, device = "pdf", width = 88, height = 88, units = "mm")
 
 ```
 
@@ -656,7 +656,7 @@ h4 = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   geom_node_text(aes(x = x * 1.05, y = y * 1.05,  # Move text even further outward
                      filter = leaf, label = shortName, 
                      angle = angle, hjust = hjust), 
-                 size = 2, alpha = 1) +
+                 size = 2.2, alpha = 1) +
   scale_color_manual(values = cluster_colors) +
   coord_fixed() +
   theme_void() +
@@ -664,10 +664,10 @@ h4 = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
     legend.position = "none",
     plot.margin = unit(c(0,0,0,0), "cm"),
   ) +
-  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))  # Further expanded limits to accommodate text and points
+  expand_limits(x = c(-1.4, 1.4), y = c(-1.4, 1.4))  # Further expanded limits to accommodate text and points
 h4 
 
-ggsave(here::here("Outputs", "HEB_1G_males_clusters.pdf"), h4, device = "pdf", width = 88, height = 88, units = "mm")
+ggsave(here::here("Outputs", "Second figures", "HEB_1G_males_clusters.pdf"), h4, device = "pdf", width = 88, height = 88, units = "mm")
 
 ```
 
@@ -851,17 +851,17 @@ h5 = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   scale_edge_colour_distiller(palette = "RdPu") +
   geom_node_point(aes(filter = leaf), size = 2, color = "black") +
   geom_node_text(aes(x = x*1.05, y=y*1.05, filter = leaf, label=shortName, angle = angle, hjust=hjust), 
-                 size=1.8, alpha=1) +
+                 size=2.2, alpha=1) +
   coord_fixed() +
   theme_void() +
   theme(
     legend.position="none",
     plot.margin=unit(c(0,0,0,0),"cm"),
   ) +
-  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+  expand_limits(x = c(-1.4, 1.4), y = c(-1.4, 1.4))
 h5
 
-ggsave(here::here("Outputs", "HEB_2G_females.pdf"), h5, device = "pdf", width = 88, height = 88, units = "mm")
+ggsave(here::here("Outputs", "Second figures", "HEB_2G_females.pdf"), h5, device = "pdf", width = 88, height = 88, units = "mm")
 
 ```
 
@@ -925,7 +925,7 @@ h6 = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   geom_node_text(aes(x = x * 1.05, y = y * 1.05,
                      filter = leaf, label = shortName, 
                      angle = angle, hjust = hjust), 
-                 size = 1.5, alpha = 1) +
+                 size = 1.8, alpha = 1) +
   scale_color_manual(values = group_colors, name = NULL) +  # Name the legend
   coord_fixed() +
   theme_void() +
@@ -934,10 +934,10 @@ h6 = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
     legend.text = element_text(size = 6),
     plot.margin = unit(c(0,0,0,0),"cm"),
   ) +
-  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+  expand_limits(x = c(-1.4, 1.4), y = c(-1.4, 1.4))
 h6 
 
-ggsave(here::here("Outputs", "HEB_2G_females_legend.pdf"), h6, device = "pdf", width = 88, height = 88, units = "mm")
+ggsave(here::here("Outputs", "Second figures", "HEB_2G_females_legend.pdf"), h6, device = "pdf", width = 88, height = 88, units = "mm")
 
 
 ```
@@ -1055,7 +1055,7 @@ h5b = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   geom_node_text(aes(x = x * 1.14, y = y * 1.14,  # Move text even further outward
                      filter = leaf, label = shortName, 
                      angle = angle, hjust = hjust), 
-                 size = 1.3, alpha = 1) +
+                 size = 1.5, alpha = 1) +
   scale_color_manual(values = cluster_colors) +
   coord_fixed() +
   theme_void() +
@@ -1063,10 +1063,10 @@ h5b = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
     legend.position = "none",
     plot.margin = unit(c(0,0,0,0), "cm"),
   ) +
-  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))  # Further expanded limits to accommodate text and points
+  expand_limits(x = c(-1.4, 1.4), y = c(-1.4, 1.4))  # Further expanded limits to accommodate text and points
 h5b
 
-ggsave(here::here("Outputs", "HEB_2G_females_clusters.pdf"), h5b, device = "pdf", width = 88, height = 88, units = "mm")
+ggsave(here::here("Outputs", "Second figures", "HEB_2G_females_clusters.pdf"), h5b, device = "pdf", width = 88, height = 88, units = "mm")
 
 ```
 
@@ -1248,16 +1248,16 @@ h7 = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   scale_edge_colour_distiller(palette = "BuPu") +
   geom_node_point(aes(filter = leaf), size = 2, color = "black") +
   geom_node_text(aes(x = x*1.05, y=y*1.05, filter = leaf, label=shortName, angle = angle, hjust=hjust), 
-                 size=1.8, alpha=1) +
+                 size=2, alpha=1) +
   coord_fixed() +
   theme_void() +
   theme(
     legend.position="none",
     plot.margin=unit(c(0,0,0,0),"cm"),
   ) +
-  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+  expand_limits(x = c(-1.4, 1.4), y = c(-1.4, 1.4))
 h7
-ggsave(here::here("Outputs", "HEB_2G_males.pdf"), h7, device = "pdf", width = 88, height = 88, units = "mm")
+ggsave(here::here("Outputs", "Second figures", "HEB_2G_males.pdf"), h7, device = "pdf", width = 88, height = 88, units = "mm")
 
 
 ```
@@ -1322,7 +1322,7 @@ h8 = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   geom_node_text(aes(x = x * 1.05, y = y * 1.05,
                      filter = leaf, label = shortName, 
                      angle = angle, hjust = hjust), 
-                 size = 1.5, alpha = 1) +
+                 size = 1.8, alpha = 1) +
   scale_color_manual(values = group_colors, name = NULL) +  # Name the legend
   coord_fixed() +
   theme_void() +
@@ -1331,9 +1331,9 @@ h8 = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
     legend.text = element_text(size = 6),
     plot.margin = unit(c(0,0,0,0),"cm"),
   ) +
-  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+  expand_limits(x = c(-1.4, 1.4), y = c(-1.4, 1.4))
 h8
-ggsave(here::here("Outputs", "HEB_2G_males_legend.pdf"), h8, device = "pdf", width = 88, height = 88, units = "mm")
+ggsave(here::here("Outputs", "Second figures", "HEB_2G_males_legend.pdf"), h8, device = "pdf", width = 88, height = 88, units = "mm")
 
 ```
 
@@ -1456,7 +1456,7 @@ h9 = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
   geom_node_text(aes(x = x * 1.14, y = y * 1.14,  # Move text even further outward
                      filter = leaf, label = shortName, 
                      angle = angle, hjust = hjust), 
-                 size = 1.4, alpha = 1) +
+                 size = 1.6, alpha = 1) +
   scale_color_manual(values = cluster_colors) +
   coord_fixed() +
   theme_void() +
@@ -1464,8 +1464,8 @@ h9 = ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +
     legend.position = "none",
     plot.margin = unit(c(0,0,0,0), "cm"),
   ) +
-  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))  # Further expanded limits to accommodate text and points
+  expand_limits(x = c(-1.4, 1.4), y = c(-1.4, 1.4))  # Further expanded limits to accommodate text and points
 h9
-ggsave(here::here("Outputs", "HEB_2G_males_clusters.pdf"), h9, device = "pdf", width = 88, height = 88, units = "mm")
+ggsave(here::here("Outputs", "Second figures", "HEB_2G_males_clusters.pdf"), h9, device = "pdf", width = 88, height = 88, units = "mm")
 
 ```
